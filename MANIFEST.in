@@ -1,0 +1,5 @@
+include LICENSE
+include agent.md
+include fix_plan.md
+include prompt.md
+recursive-include ralphy *
