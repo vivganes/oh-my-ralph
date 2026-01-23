@@ -601,85 +601,98 @@ class TestNoSideEffects(unittest.TestCase):
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-# class TestRalphLoopEdgeCases(unittest.TestCase):
-#     def setUp(self):
-#         self.temp_dir = tempfile.mkdtemp()
-#         self.log_file = os.path.join(self.temp_dir, "test.log")
-#         self.prompt_file = os.path.join(self.temp_dir, ".ralphy", "prompt.md")
-#         os.makedirs(os.path.dirname(self.prompt_file), exist_ok=True)
-#         with open(self.prompt_file, "w", encoding="utf-8") as f:
-#             f.write("Test prompt content")
+class TestRalphLoopEdgeCases(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.log_file = os.path.join(self.temp_dir, "test.log")
+        self.prompt_file = os.path.join(self.temp_dir, ".ralphy", "prompt.md")
+        os.makedirs(os.path.dirname(self.prompt_file), exist_ok=True)
+        with open(self.prompt_file, "w", encoding="utf-8") as f:
+            f.write("Test prompt content")
 
-#     def tearDown(self):
-#         import shutil
-#         shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-#     @patch("oh_my_ralph.ralph_loop.subprocess.Popen", side_effect=Exception("fail"))
-#     def test_start_opencode_web_at_port_exception(self, mock_popen):
-#         from oh_my_ralph.ralph_loop import RalphLoop
-#         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
-#         ralph.start_opencode_web_at_port()
-#         self.assertIsNone(ralph.opencode_proc)
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+        # Clean up bad_dir if created by any test
+        if os.path.exists("bad_dir"):
+            shutil.rmtree("bad_dir", ignore_errors=True)
 
 #     @patch("oh_my_ralph.ralph_loop.subprocess.Popen", side_effect=Exception("fail"))
-#     def test_run_agent_general_exception(self, mock_popen):
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen", side_effect=Exception("fail"))
+    def test_start_opencode_web_at_port_exception(self, mock_popen):
 #         from oh_my_ralph.ralph_loop import RalphLoop
 #         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
-#         code, out, err = ralph._run_agent("prompt")
-#         self.assertEqual(code, -1)
-#         self.assertIn("fail", err)
+        ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+        ralph.start_opencode_web_at_port()
+        self.assertIsNone(ralph.opencode_proc)
 
-#     def test_print_ascii_art_exception(self):
+#     @patch("oh_my_ralph.ralph_loop.subprocess.Popen", side_effect=Exception("fail"))
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen", side_effect=Exception("fail"))
+    def test_run_agent_general_exception(self, mock_popen):
 #         from oh_my_ralph.ralph_loop import RalphLoop
 #         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
-#         with patch("importlib.resources.files", side_effect=Exception("fail")):
-#             # Should not raise
-#             ralph._print_ascii_art()
+        ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+        code, out, err = ralph._run_agent("prompt")
+        self.assertEqual(code, -1)
+        self.assertIn("fail", err)
 
-#     def test_run_single_iteration_file_not_found(self):
+    @patch("importlib.resources.files", side_effect=Exception("fail"))
+    def test_print_ascii_art_exception(self, mock_files):
 #         from oh_my_ralph.ralph_loop import RalphLoop
 #         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
-#         os.remove(self.prompt_file)
-#         success, should_stop = ralph.run_single_iteration()
-#         self.assertFalse(success)
-#         self.assertFalse(should_stop)
+        ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+        # Should not raise
+        ralph._print_ascii_art()
 
-#     def test_run_single_iteration_general_exception(self):
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
+    def test_run_single_iteration_file_not_found(self, mock_popen):
 #         from oh_my_ralph.ralph_loop import RalphLoop
 #         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
-#         with patch.object(ralph, "_read_prompt", side_effect=Exception("fail")):
-#             success, should_stop = ralph.run_single_iteration()
-#             self.assertFalse(success)
-#             self.assertFalse(should_stop)
+        ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+        os.remove(self.prompt_file)
+        success, should_stop = ralph.run_single_iteration()
+        self.assertFalse(success)
+        self.assertFalse(should_stop)
 
-#     def test_resource_loading_fallback(self):
-#         from oh_my_ralph.ralph_loop import RalphLoop
-#         # Patch importlib.resources.files to raise FileNotFoundError
-#         with patch("importlib.resources.files", side_effect=FileNotFoundError):
-#             ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
-#             # run() will fallback to base_dir for resource files
-#             with patch.object(ralph, "copy_resource_files") as mock_copy:
-#                 with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
-#                     with patch("oh_my_ralph.ralph_loop.time.sleep"):
-#                         ralph.run()
-#                 mock_copy.assert_called()
-
-#     def test_directory_change_failure(self):
-#         from oh_my_ralph.ralph_loop import RalphLoop
-#         ralph = RalphLoop(working_dir="bad_dir", log_file=self.log_file)
-#         with patch("os.chdir", side_effect=Exception("fail")):
-#             with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
-#                 with patch("oh_my_ralph.ralph_loop.time.sleep"):
-#                     with self.assertRaises(SystemExit):
-#                         ralph.run()
-
-#     def test_prerequisite_failure_early_return(self):
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
+    def test_run_single_iteration_general_exception(self, mock_popen):
 #         from oh_my_ralph.ralph_loop import RalphLoop
 #         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
-#         with patch.object(ralph, "_check_prerequisites", return_value=False):
-#             with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
-#                 with patch("oh_my_ralph.ralph_loop.time.sleep"):
-#                     ralph.run()  # Should return early, no exception
+        ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+        with patch.object(ralph, "_read_prompt", side_effect=Exception("fail")):
+            success, should_stop = ralph.run_single_iteration()
+            self.assertFalse(success)
+            self.assertFalse(should_stop)
+
+    @patch("oh_my_ralph.ralph_loop.time.sleep")
+    def test_resource_loading_fallback(self, mock_sleep):
+        # Patch importlib.resources.files to raise FileNotFoundError
+        with patch("importlib.resources.files", side_effect=FileNotFoundError):
+            ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file, max_iterations=1)
+            # run() will fallback to base_dir for resource files
+            with patch.object(ralph, "copy_resource_files") as mock_copy:
+                with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
+                    ralph.run()
+            mock_copy.assert_called()
+
+    # @patch("oh_my_ralph.ralph_loop.time.sleep")
+    @patch("oh_my_ralph.ralph_loop.time.sleep")
+    def test_directory_change_failure(self, mock_sleep):
+        with patch("oh_my_ralph.ralph_loop.sys.exit") as mock_exit, \
+             patch("os.chdir", side_effect=Exception("fail")):
+            ralph = RalphLoop(working_dir="bad_dir", log_file=self.log_file, max_iterations=1)
+            with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
+                ralph.run()
+        mock_exit.assert_called()
+
+    @patch("oh_my_ralph.ralph_loop.time.sleep")
+    def test_prerequisite_failure_early_return(self, mock_sleep):
+#         from oh_my_ralph.ralph_loop import RalphLoop
+#         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+        ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+        with patch.object(ralph, "_check_prerequisites", return_value=False):
+            with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
+                ralph.run()  # Should return early, no exception
 
 if __name__ == "__main__":
     # Print warning before running tests
