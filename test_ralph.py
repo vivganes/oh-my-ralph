@@ -677,12 +677,13 @@ class TestRalphLoopEdgeCases(unittest.TestCase):
 
     # @patch("oh_my_ralph.ralph_loop.time.sleep")
     @patch("oh_my_ralph.ralph_loop.time.sleep")
-    def test_directory_change_failure(self, mock_sleep):
+    @patch.object(RalphLoop, "start_opencode_web_at_port")
+    @patch.object(RalphLoop, "_stop_opencode_server")
+    def test_directory_change_failure(self, mock_stop, mock_start, mock_sleep):
         with patch("oh_my_ralph.ralph_loop.sys.exit") as mock_exit, \
              patch("os.chdir", side_effect=Exception("fail")):
             ralph = RalphLoop(working_dir="bad_dir", log_file=self.log_file, max_iterations=1)
-            with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
-                ralph.run()
+            ralph.run()
         mock_exit.assert_called()
 
     @patch("oh_my_ralph.ralph_loop.time.sleep")

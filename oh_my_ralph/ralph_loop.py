@@ -93,7 +93,7 @@ class RalphLoop:
                 agent_cmd += f" --model {self.model}"
             if self.opencode_port:
                 agent_cmd += f" --attach http://localhost:{self.opencode_port}"
-            agent_cmd += f' "Read and follow the instructions in the {self.prompt_file}."'
+            agent_cmd += f' "Read and follow the instructions in the file `{self.prompt_file}`."'
         return agent_cmd
 
     def _run_agent(self, prompt: str) -> tuple[int, str, str]:
@@ -177,6 +177,7 @@ class RalphLoop:
             return (False, False)
 
     def run(self):
+        self._print_ascii_art()
         import os
         import shutil
         base_dir = self.working_dir if self.working_dir else os.getcwd()
@@ -213,13 +214,14 @@ class RalphLoop:
             except Exception as e:
                 self._log(f"Failed to change directory to {self.working_dir}: {e}")
                 sys.exit(1)
-        self._print_ascii_art()
+        
         self._log("Starting Ralph Loop...")
         self._log(f"Agent command: {self.agent_command}")
         self._log(f"Prompt file: {self.prompt_file}")
         self._log(f"Delay between loops: {self.delay}s")
         time.sleep(5)
-        self.start_opencode_web_at_port()
+        if(self.agent_command.strip().startswith("opencode")):
+            self.start_opencode_web_at_port()
         if not self._check_prerequisites():
             self._log("Prerequisites check failed. Exiting.")
             self._stop_opencode_server()
@@ -248,7 +250,8 @@ class RalphLoop:
                     self._log(f"Waiting {self.delay}s before next iteration...")
                     time.sleep(self.delay)
         finally:
-            self._stop_opencode_server()
+            if(self.agent_command.strip().startswith("opencode")):
+                self._stop_opencode_server()
         self._log(f"Ralph Loop stopped after {self.iteration} iterations.")
 
     def copy_resource_files(self, os, shutil, base_dir, ralphy_dir, resource_files, resource_paths):
