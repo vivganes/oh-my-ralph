@@ -12,7 +12,7 @@ import signal
 # Add parent directory to path to import ralph
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from oh_my_ralph.ralph import RalphLoop
+from oh_my_ralph.ralph_loop import RalphLoop
 
 
 class TestRalphLoop(unittest.TestCase):
@@ -32,7 +32,7 @@ class TestRalphLoop(unittest.TestCase):
             f.write("Test prompt content")
         
         # Mock signal handlers to avoid side effects
-        self.signal_patcher = patch("oh_my_ralph.ralph.signal.signal")
+        self.signal_patcher = patch("oh_my_ralph.ralph_loop.signal.signal")
         self.mock_signal = self.signal_patcher.start()
         
         # Store original signal handlers to restore later
@@ -48,7 +48,6 @@ class TestRalphLoop(unittest.TestCase):
         """Test RalphLoop initialization."""
         ralph = RalphLoop(
             agent_command="test_agent",
-            prompt_file="test.md",
             delay_between_loops=10,
             max_iterations=5,
             log_file=self.log_file,
@@ -121,7 +120,7 @@ class TestRalphLoop(unittest.TestCase):
         
         self.assertEqual(cmd, "some-other-agent")
 
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_agent_success(self, mock_popen):
         """Test successful agent execution."""
         mock_process = Mock()
@@ -141,7 +140,7 @@ class TestRalphLoop(unittest.TestCase):
         self.assertEqual(stdout, "stdout content")
         self.assertEqual(stderr, "")
 
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_agent_failure(self, mock_popen):
         """Test agent execution failure."""
         mock_process = Mock()
@@ -160,7 +159,7 @@ class TestRalphLoop(unittest.TestCase):
         self.assertEqual(return_code, 1)
         self.assertEqual(stderr, "error message")
 
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_agent_timeout(self, mock_popen):
         """Test agent execution timeout."""
         import subprocess
@@ -214,7 +213,7 @@ class TestRalphLoop(unittest.TestCase):
         result = ralph._check_prerequisites()
         self.assertTrue(result)  # Should still pass if only prompt exists
 
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_single_iteration_success(self, mock_popen):
         """Test a successful single iteration."""
         mock_process = Mock()
@@ -234,7 +233,7 @@ class TestRalphLoop(unittest.TestCase):
         self.assertFalse(should_stop)
         self.assertEqual(ralph.iteration, 1)
 
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_single_iteration_failure(self, mock_popen):
         """Test a failed single iteration."""
         mock_process = Mock()
@@ -254,7 +253,7 @@ class TestRalphLoop(unittest.TestCase):
         self.assertFalse(should_stop)
         self.assertEqual(ralph.iteration, 1)
 
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_single_iteration_with_done_marker(self, mock_popen):
         """Test iteration detects <PROMISE>DONE</PROMISE> marker."""
         mock_process = Mock()
@@ -279,7 +278,7 @@ class TestRalphLoop(unittest.TestCase):
             log_content = f.read()
             self.assertIn("DETECTED COMPLETION MARKER", log_content)
 
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_single_iteration_without_done_marker(self, mock_popen):
         """Test iteration continues without done marker."""
         mock_process = Mock()
@@ -306,7 +305,7 @@ class TestRalphLoop(unittest.TestCase):
         ralph._signal_handler(signal.SIGINT, None)
         self.assertFalse(ralph.running)
 
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_start_opencode_web_server(self, mock_popen):
         """Test starting opencode web server."""
         mock_process = Mock()
@@ -346,8 +345,8 @@ class TestRalphLoop(unittest.TestCase):
         # Should not raise an exception
         ralph._stop_opencode_server()
 
-    @patch("oh_my_ralph.ralph.time.sleep")
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.time.sleep")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_with_max_iterations(self, mock_popen, mock_sleep):
         """Test run loop with max iterations."""
         mock_process = Mock()
@@ -399,7 +398,7 @@ class TestRalphLoop(unittest.TestCase):
         # Mock agent to always fail
         with patch.object(ralph, "_run_agent") as mock_run:
             mock_run.return_value = (1, "", "error")
-            with patch("oh_my_ralph.ralph.time.sleep"):  # Skip sleep delays
+            with patch("oh_my_ralph.ralph_loop.time.sleep"):  # Skip sleep delays
                 with patch.object(ralph, 'start_opencode_web_at_port'):
                     with patch.object(ralph, '_stop_opencode_server'):
                         ralph.run()
@@ -459,8 +458,8 @@ class TestRalphLoop(unittest.TestCase):
         except Exception as e:
             self.fail(f"_print_ascii_art raised an exception: {e}")
 
-    @patch("oh_my_ralph.ralph.time.sleep")
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.time.sleep")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_stops_on_done_marker(self, mock_popen, mock_sleep):
         """Test that run loop stops when done marker is detected."""
         mock_process = Mock()
@@ -502,8 +501,8 @@ class TestRalphLoopIntegration(unittest.TestCase):
         import shutil
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch("oh_my_ralph.ralph.time.sleep")
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.time.sleep")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_full_loop_execution(self, mock_popen, mock_sleep):
         """Test full loop execution flow."""
         # Create .ralphy structure
@@ -548,7 +547,7 @@ class TestRalphLoopIntegration(unittest.TestCase):
 class TestNoSideEffects(unittest.TestCase):
     """Tests to ensure no real commands are executed during tests."""
     
-    @patch("oh_my_ralph.ralph.signal.signal")
+    @patch("oh_my_ralph.ralph_loop.signal.signal")
     def test_no_subprocess_without_mock(self, mock_signal):
         """Ensure subprocess.Popen is never called in tests without mocking."""
         # This test verifies our test design - if this fails, we have a test
@@ -568,8 +567,8 @@ class TestNoSideEffects(unittest.TestCase):
         # The object should exist but NOT have run any commands
         self.assertEqual(ralph.iteration, 0)
     
-    @patch("oh_my_ralph.ralph.signal.signal")
-    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    @patch("oh_my_ralph.ralph_loop.signal.signal")
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_subprocess_always_mocked_in_execution(self, mock_popen, mock_signal):
         """Ensure subprocess calls are always mocked when executing."""
         mock_process = Mock()
@@ -601,6 +600,86 @@ class TestNoSideEffects(unittest.TestCase):
         import shutil
         shutil.rmtree(temp_dir, ignore_errors=True)
 
+
+# class TestRalphLoopEdgeCases(unittest.TestCase):
+#     def setUp(self):
+#         self.temp_dir = tempfile.mkdtemp()
+#         self.log_file = os.path.join(self.temp_dir, "test.log")
+#         self.prompt_file = os.path.join(self.temp_dir, ".ralphy", "prompt.md")
+#         os.makedirs(os.path.dirname(self.prompt_file), exist_ok=True)
+#         with open(self.prompt_file, "w", encoding="utf-8") as f:
+#             f.write("Test prompt content")
+
+#     def tearDown(self):
+#         import shutil
+#         shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+#     @patch("oh_my_ralph.ralph_loop.subprocess.Popen", side_effect=Exception("fail"))
+#     def test_start_opencode_web_at_port_exception(self, mock_popen):
+#         from oh_my_ralph.ralph_loop import RalphLoop
+#         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+#         ralph.start_opencode_web_at_port()
+#         self.assertIsNone(ralph.opencode_proc)
+
+#     @patch("oh_my_ralph.ralph_loop.subprocess.Popen", side_effect=Exception("fail"))
+#     def test_run_agent_general_exception(self, mock_popen):
+#         from oh_my_ralph.ralph_loop import RalphLoop
+#         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+#         code, out, err = ralph._run_agent("prompt")
+#         self.assertEqual(code, -1)
+#         self.assertIn("fail", err)
+
+#     def test_print_ascii_art_exception(self):
+#         from oh_my_ralph.ralph_loop import RalphLoop
+#         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+#         with patch("importlib.resources.files", side_effect=Exception("fail")):
+#             # Should not raise
+#             ralph._print_ascii_art()
+
+#     def test_run_single_iteration_file_not_found(self):
+#         from oh_my_ralph.ralph_loop import RalphLoop
+#         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+#         os.remove(self.prompt_file)
+#         success, should_stop = ralph.run_single_iteration()
+#         self.assertFalse(success)
+#         self.assertFalse(should_stop)
+
+#     def test_run_single_iteration_general_exception(self):
+#         from oh_my_ralph.ralph_loop import RalphLoop
+#         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+#         with patch.object(ralph, "_read_prompt", side_effect=Exception("fail")):
+#             success, should_stop = ralph.run_single_iteration()
+#             self.assertFalse(success)
+#             self.assertFalse(should_stop)
+
+#     def test_resource_loading_fallback(self):
+#         from oh_my_ralph.ralph_loop import RalphLoop
+#         # Patch importlib.resources.files to raise FileNotFoundError
+#         with patch("importlib.resources.files", side_effect=FileNotFoundError):
+#             ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+#             # run() will fallback to base_dir for resource files
+#             with patch.object(ralph, "copy_resource_files") as mock_copy:
+#                 with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
+#                     with patch("oh_my_ralph.ralph_loop.time.sleep"):
+#                         ralph.run()
+#                 mock_copy.assert_called()
+
+#     def test_directory_change_failure(self):
+#         from oh_my_ralph.ralph_loop import RalphLoop
+#         ralph = RalphLoop(working_dir="bad_dir", log_file=self.log_file)
+#         with patch("os.chdir", side_effect=Exception("fail")):
+#             with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
+#                 with patch("oh_my_ralph.ralph_loop.time.sleep"):
+#                     with self.assertRaises(SystemExit):
+#                         ralph.run()
+
+#     def test_prerequisite_failure_early_return(self):
+#         from oh_my_ralph.ralph_loop import RalphLoop
+#         ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+#         with patch.object(ralph, "_check_prerequisites", return_value=False):
+#             with patch.object(ralph, "start_opencode_web_at_port"), patch.object(ralph, "_stop_opencode_server"):
+#                 with patch("oh_my_ralph.ralph_loop.time.sleep"):
+#                     ralph.run()  # Should return early, no exception
 
 if __name__ == "__main__":
     # Print warning before running tests

@@ -17,6 +17,13 @@ Python 3.10+
     ```bash
     oh-my-ralph --agent "opencode run" --model opencode/glm-4.7-free --start-opencode-web-at-port 8089 --working-dir /path/to/dir/with/requirements
     ```
+## What does this do?
+- Runs your specified `agent` command in a loop.
+- The loop exits when any of the following occur:
+    - The command prints `<PROMPT>DONE</PROMPT>`.
+    - The maximum number of iterations is reached, configurable via `--max-iterations`.
+    - Error occurs for 5 consecutive runs of the loop.
+    - You manually stop the process by pressing `Ctrl+C`.
 
 ## Development
 

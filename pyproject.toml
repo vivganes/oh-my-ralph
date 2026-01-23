@@ -22,7 +22,7 @@ classifiers = [
 "Homepage" = "https://github.com/vivganes/oh-my-ralph"
 "Repository" = "https://github.com/vivganes/oh-my-ralph"
 [project.scripts]
-oh-my-ralph = "oh_my_ralph.ralph:main"
+oh-my-ralph = "oh_my_ralph.ralph_cli:main"
 
 [tool.setuptools.package-data]
 oh_my_ralph = ["*.md"]

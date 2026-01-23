@@ -1,3 +1,4 @@
 include LICENSE
 recursive-include oh_my_ralph *.md
 recursive-include oh_my_ralph *.py
+recursive-include oh_my_ralph *.txt
