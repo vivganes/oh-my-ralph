@@ -228,9 +228,10 @@ class TestRalphLoop(unittest.TestCase):
             log_file=self.log_file,
         )
         
-        success = ralph.run_single_iteration()
+        success, should_stop = ralph.run_single_iteration()
         
         self.assertTrue(success)
+        self.assertFalse(should_stop)
         self.assertEqual(ralph.iteration, 1)
 
     @patch("oh_my_ralph.ralph.subprocess.Popen")
@@ -247,10 +248,55 @@ class TestRalphLoop(unittest.TestCase):
             log_file=self.log_file,
         )
         
-        success = ralph.run_single_iteration()
+        success, should_stop = ralph.run_single_iteration()
         
         self.assertFalse(success)
+        self.assertFalse(should_stop)
         self.assertEqual(ralph.iteration, 1)
+
+    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    def test_run_single_iteration_with_done_marker(self, mock_popen):
+        """Test iteration detects <PROMISE>DONE</PROMISE> marker."""
+        mock_process = Mock()
+        mock_process.communicate.return_value = ("Some output <PROMISE>DONE</PROMISE> more text", "")
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
+        
+        ralph = RalphLoop(
+            agent_command="test-agent",
+            working_dir=self.temp_dir,
+            log_file=self.log_file,
+        )
+        
+        success, should_stop = ralph.run_single_iteration()
+        
+        self.assertTrue(success)
+        self.assertTrue(should_stop)
+        self.assertEqual(ralph.iteration, 1)
+        
+        # Verify log contains completion marker message
+        with open(self.log_file, "r", encoding="utf-8") as f:
+            log_content = f.read()
+            self.assertIn("DETECTED COMPLETION MARKER", log_content)
+
+    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    def test_run_single_iteration_without_done_marker(self, mock_popen):
+        """Test iteration continues without done marker."""
+        mock_process = Mock()
+        mock_process.communicate.return_value = ("Regular output without marker", "")
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
+        
+        ralph = RalphLoop(
+            agent_command="test-agent",
+            working_dir=self.temp_dir,
+            log_file=self.log_file,
+        )
+        
+        success, should_stop = ralph.run_single_iteration()
+        
+        self.assertTrue(success)
+        self.assertFalse(should_stop)
 
     def test_signal_handler(self):
         """Test signal handler sets running to False."""
@@ -362,6 +408,85 @@ class TestRalphLoop(unittest.TestCase):
         with open(self.log_file, "r", encoding="utf-8") as f:
             log_content = f.read()
             self.assertIn("consecutive failures", log_content)
+
+    @patch("importlib.resources.as_file")
+    @patch("importlib.resources.files")
+    def test_print_ascii_art_success(self, mock_files, mock_as_file):
+        """Test ASCII art printing at startup."""
+        # Create a temporary file with ASCII art content
+        import tempfile
+        mock_ascii_content = "ASCII ART LINE 1\nASCII ART LINE 2\n"
+        
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as f:
+            f.write(mock_ascii_content)
+            temp_file = f.name
+        
+        try:
+            # Mock the resource loading
+            mock_resource = Mock()
+            mock_resource.is_file.return_value = True
+            mock_files.return_value.joinpath.return_value = mock_resource
+            
+            # Mock as_file to return our temp file
+            mock_as_file.return_value.__enter__ = Mock(return_value=temp_file)
+            mock_as_file.return_value.__exit__ = Mock(return_value=False)
+            
+            ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+            
+            # Capture stdout
+            from io import StringIO
+            import sys
+            captured_output = StringIO()
+            sys.stdout = captured_output
+            
+            try:
+                ralph._print_ascii_art()
+                output = captured_output.getvalue()
+                self.assertIn("ASCII ART LINE 1", output)
+                self.assertIn("ASCII ART LINE 2", output)
+            finally:
+                sys.stdout = sys.__stdout__
+        finally:
+            os.remove(temp_file)
+
+    def test_print_ascii_art_failure_silent(self):
+        """Test ASCII art printing fails silently if file not found."""
+        ralph = RalphLoop(working_dir=self.temp_dir, log_file=self.log_file)
+        
+        # Should not raise an exception
+        try:
+            ralph._print_ascii_art()
+        except Exception as e:
+            self.fail(f"_print_ascii_art raised an exception: {e}")
+
+    @patch("oh_my_ralph.ralph.time.sleep")
+    @patch("oh_my_ralph.ralph.subprocess.Popen")
+    def test_run_stops_on_done_marker(self, mock_popen, mock_sleep):
+        """Test that run loop stops when done marker is detected."""
+        mock_process = Mock()
+        # First iteration returns done marker
+        mock_process.communicate.return_value = ("<PROMISE>DONE</PROMISE>", "")
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
+        
+        ralph = RalphLoop(
+            agent_command="test-agent",
+            max_iterations=10,  # Set high to ensure it's the marker that stops it
+            working_dir=self.temp_dir,
+            log_file=self.log_file,
+        )
+        
+        with patch.object(ralph, 'start_opencode_web_at_port'):
+            with patch.object(ralph, '_stop_opencode_server'):
+                ralph.run()
+        
+        # Should stop after first iteration due to done marker
+        self.assertEqual(ralph.iteration, 1)
+        
+        # Verify log shows completion
+        with open(self.log_file, "r", encoding="utf-8") as f:
+            log_content = f.read()
+            self.assertIn("Agent signaled completion", log_content)
 
 
 class TestRalphLoopIntegration(unittest.TestCase):

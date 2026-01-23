@@ -167,6 +167,18 @@ class RalphLoop:
         except Exception as e:
             return -1, "", str(e)
 
+    def _print_ascii_art(self):
+        """Print ASCII art from ascii_art.txt at startup."""
+        try:
+            import importlib.resources
+            files = importlib.resources.files("oh_my_ralph")
+            ascii_art_path = files.joinpath("ascii_art.txt")
+            with importlib.resources.as_file(ascii_art_path) as art_file:
+                with open(art_file, 'r', encoding='utf-8') as f:
+                    print(f.read())
+        except Exception:
+            pass
+
     def _check_prerequisites(self) -> bool:
         """Check that all required files exist in .ralphy."""
         required_files = [self.prompt_md, self.agent_md, self.fix_plan_md]
@@ -180,10 +192,10 @@ class RalphLoop:
 
         return True
 
-    def run_single_iteration(self) -> bool:
+    def run_single_iteration(self) -> tuple[bool, bool]:
         """
         Run a single iteration of the Ralph loop.
-        Returns True if successful, False otherwise.
+        Returns (success, should_stop) tuple.
         """
         self.iteration += 1
         self._log(f"=== Ralph Loop Iteration {self.iteration} ===")
@@ -202,6 +214,13 @@ class RalphLoop:
             elapsed = time.time() - start_time
             self._log(f"Agent finished in {elapsed:.1f}s with return code {return_code}")
 
+            # Check for completion marker
+            should_stop = False
+            if stdout and "<PROMISE>DONE</PROMISE>" in stdout:
+                self._log("=== DETECTED COMPLETION MARKER: <PROMISE>DONE</PROMISE> ===")
+                self._log("Agent has indicated work is complete. Stopping Ralph Loop.")
+                should_stop = True
+
             # Log output summary
             if stdout:
                 # Log last 500 chars of stdout
@@ -211,14 +230,14 @@ class RalphLoop:
             if stderr and return_code != 0:
                 self._log(f"Stderr: {stderr[:500]}")
 
-            return return_code == 0
+            return (return_code == 0, should_stop)
 
         except FileNotFoundError as e:
             self._log(f"Error: {e}")
-            return False
+            return (False, False)
         except Exception as e:
             self._log(f"Unexpected error: {e}")
-            return False
+            return (False, False)
 
 
 
@@ -226,7 +245,6 @@ class RalphLoop:
     def run(self):
         """Run the Ralph loop until stopped or max iterations reached."""
         import os
-        import sys
         import shutil
 
         # Determine the base directory (working_dir or current directory)
@@ -256,12 +274,15 @@ class RalphLoop:
             os.makedirs(ralphy_dir, exist_ok=True)
             self.copy_resource_files(os, shutil, base_dir, ralphy_dir, resource_files, resource_paths)
         else:
-            # .ralphy exists, check for all required files
-            missing = [fname for fname in resource_files if not os.path.exists(os.path.join(ralphy_dir, fname))]
+            # .ralphy exists, check for all required files except prompt.md
+            missing = [fname for fname in resource_files if fname != "prompt.md" and not os.path.exists(os.path.join(ralphy_dir, fname))]
             if missing:
                 self._log(f"Warning: .ralphy exists but missing files: {', '.join(missing)}")
                 self.copy_resource_files(os, shutil, base_dir, ralphy_dir, missing,
                                          [os.path.join(base_dir, fname) for fname in missing])
+            # Always copy prompt.md
+            prompt_idx = resource_files.index("prompt.md")
+            self.copy_resource_files(os, shutil, base_dir, ralphy_dir, ["prompt.md"], [resource_paths[prompt_idx]])
 
         # Change to working directory if provided
         if self.working_dir:
@@ -272,6 +293,7 @@ class RalphLoop:
                 self._log(f"Failed to change directory to {self.working_dir}: {e}")
                 sys.exit(1)
 
+        self._print_ascii_art()
         self._log("Starting Ralph Loop...")
         self._log(f"Agent command: {self.agent_command}")
         self._log(f"Prompt file: {self.prompt_file}")
@@ -295,7 +317,11 @@ class RalphLoop:
                     self._log(f"Reached max iterations ({self.max_iterations}). Stopping.")
                     break
 
-                success = self.run_single_iteration()
+                success, should_stop = self.run_single_iteration()
+
+                if should_stop:
+                    self._log("Agent signaled completion. Exiting Ralph Loop.")
+                    break
 
                 if success:
                     consecutive_failures = 0
