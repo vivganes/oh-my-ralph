@@ -1,5 +1,3 @@
 include LICENSE
-include agent.md
-include fix_plan.md
-include prompt.md
-recursive-include ralphy *
+recursive-include oh_my_ralph *.md
+recursive-include oh_my_ralph *.py

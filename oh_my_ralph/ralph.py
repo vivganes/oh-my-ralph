@@ -39,7 +39,6 @@ class RalphLoop:
     ):
 
         self.agent_command = agent_command
-        self.prompt_file = Path(prompt_file)
         self.delay = delay_between_loops
         self.max_iterations = max_iterations
         self.log_file = Path(log_file)
@@ -50,6 +49,16 @@ class RalphLoop:
         self.opencode_port = opencode_port
         self.opencode_proc = None
         self.working_dir = working_dir
+
+        # Set .ralphy directory and resource file paths
+        import os
+        base_dir = self.working_dir if self.working_dir else os.getcwd()
+        self.ralphy_dir = os.path.join(base_dir, ".ralphy")
+        self.agent_md = Path(os.path.join(self.ralphy_dir, "agent.md"))
+        self.fix_plan_md = Path(os.path.join(self.ralphy_dir, "fix_plan.md"))
+        self.prompt_md = Path(os.path.join(self.ralphy_dir, "prompt.md"))
+        # Use prompt_md as the prompt file
+        self.prompt_file = self.prompt_md
 
         # Handle graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -104,25 +113,32 @@ class RalphLoop:
 
         return self.prompt_file.read_text(encoding="utf-8")
 
+    def _build_agent_command(self, prompt: str) -> str:
+        """Build the full agent command with all flags."""
+        agent_cmd = self.agent_command
+        uses_opencode = agent_cmd.strip().startswith("opencode run")
+        
+        if uses_opencode:
+            if self.model:
+                agent_cmd += f" --model {self.model}"
+            if self.opencode_port:
+                agent_cmd += f" --attach http://localhost:{self.opencode_port}"
+            agent_cmd += f' "Read and follow the instructions in the {self.prompt_file}."'
+        
+        return agent_cmd
+
     def _run_agent(self, prompt: str) -> tuple[int, str, str]:
         """
         Run the AI agent with the given prompt.
         Returns (return_code, stdout, stderr).
         """
         try:
-            agent_cmd = self.agent_command
-            uses_opencode = agent_cmd.strip().startswith("opencode run")
+            agent_cmd = self._build_agent_command(prompt)
+            uses_opencode = self.agent_command.strip().startswith("opencode run")
+            
+            print(f"Running command: {agent_cmd}")
             
             if uses_opencode:
-                # For opencode, the message must come before flags like -f
-                # Build command: opencode run "message" -f file --model model
-                if self.model:
-                    agent_cmd += f" --model {self.model}"
-                # Always attach to the opencode web server at the specified port
-                if self.opencode_port:
-                    agent_cmd += f" --attach http://localhost:{self.opencode_port}"
-                agent_cmd += f' "Read and follow the instructions in the {self.prompt_file}."'
-                print(f"Running command: {agent_cmd}")
                 process = subprocess.Popen(
                     agent_cmd,
                     shell=True,
@@ -132,7 +148,6 @@ class RalphLoop:
                 )
                 stdout, stderr = process.communicate(timeout=3600)  # 1 hour timeout
             else:
-                print(f"Running command: {agent_cmd}")
                 # Other agents may read from stdin
                 process = subprocess.Popen(
                     agent_cmd,
@@ -153,14 +168,14 @@ class RalphLoop:
             return -1, "", str(e)
 
     def _check_prerequisites(self) -> bool:
-        """Check that all required files exist."""
-        required_files = [self.prompt_file, Path("AGENT.md"), Path("requirements.md")]
+        """Check that all required files exist in .ralphy."""
+        required_files = [self.prompt_md, self.agent_md, self.fix_plan_md]
         missing = [f for f in required_files if not f.exists()]
 
         if missing:
-            self._log(f"Warning: Missing files: {', '.join(str(f) for f in missing)}")
+            self._log(f"Warning: Missing files in .ralphy: {', '.join(str(f) for f in missing)}")
             # Only prompt file is truly required
-            if self.prompt_file in missing:
+            if self.prompt_md in missing:
                 return False
 
         return True
@@ -207,12 +222,49 @@ class RalphLoop:
 
 
 
+
     def run(self):
         """Run the Ralph loop until stopped or max iterations reached."""
+        import os
+        import sys
+        import shutil
+
+        # Determine the base directory (working_dir or current directory)
+        base_dir = self.working_dir if self.working_dir else os.getcwd()
+        ralphy_dir = os.path.join(base_dir, ".ralphy")
+        import importlib.resources
+
+        resource_files = ["agent.md", "fix_plan.md", "prompt.md"]
+        resource_paths = []
+        for fname in resource_files:
+            try:
+                # Try to get resource from oh_my_ralph package using files() (recommended method)
+                files = importlib.resources.files("oh_my_ralph")
+                resource_path = files.joinpath(fname)
+                if resource_path.is_file():
+                    # Need to use as_file context manager to get actual path
+                    with importlib.resources.as_file(resource_path) as res_path:
+                        resource_paths.append(str(res_path))
+                else:
+                    raise FileNotFoundError(f"{fname} not found in package")
+            except (FileNotFoundError, ModuleNotFoundError):
+                # Fallback to local file in base_dir
+                resource_paths.append(os.path.join(base_dir, fname))
+
+        # Ensure .ralphy directory and resource files
+        if not os.path.exists(ralphy_dir):
+            os.makedirs(ralphy_dir, exist_ok=True)
+            self.copy_resource_files(os, shutil, base_dir, ralphy_dir, resource_files, resource_paths)
+        else:
+            # .ralphy exists, check for all required files
+            missing = [fname for fname in resource_files if not os.path.exists(os.path.join(ralphy_dir, fname))]
+            if missing:
+                self._log(f"Warning: .ralphy exists but missing files: {', '.join(missing)}")
+                self.copy_resource_files(os, shutil, base_dir, ralphy_dir, missing,
+                                         [os.path.join(base_dir, fname) for fname in missing])
+
         # Change to working directory if provided
         if self.working_dir:
-            import os
-            import sys
             try:
                 os.chdir(self.working_dir)
                 self._log(f"Changed working directory to: {self.working_dir}")
@@ -263,6 +315,17 @@ class RalphLoop:
             self._stop_opencode_server()
 
         self._log(f"Ralph Loop stopped after {self.iteration} iterations.")
+
+    def copy_resource_files(self, os, shutil, base_dir, ralphy_dir, resource_files, resource_paths):
+        for fname, src_path in zip(resource_files, resource_paths):
+            dst_path = os.path.join(ralphy_dir, fname)
+            print("src_path:", src_path)
+            print("dst_path:", dst_path)
+            if os.path.exists(src_path):
+                shutil.copy2(src_path, dst_path)
+                self._log(f"Copied {fname} to {ralphy_dir}")
+            else:
+                self._log(f"Warning: {fname} not found in {base_dir}, not copied.")
 
 
 def main():
@@ -334,10 +397,6 @@ The Ralph technique works best when:
         default="ollama/qwen2.5-coder:7b",
         help="Model name to use (if supported by agent, e.g., opencode)",
     )
-
-
-
-
 
     parser.add_argument(
         "--start-opencode-web-at-port",

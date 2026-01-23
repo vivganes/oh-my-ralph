@@ -3,15 +3,15 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ralphy"
-version = "0.1.0"
-description = "A Python project for ralphy."
+name = "oh-my-ralph"
+version = "0.1.4"
+description = "An opinionated orchestrator for Ralph Wiggum loops"
 authors = [
     { name="vivganes" }
 ]
 license = { file = "LICENSE" }
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -19,5 +19,10 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/vivganes/ralphy"
-"Repository" = "https://github.com/vivganes/ralphy"
+"Homepage" = "https://github.com/vivganes/oh-my-ralph"
+"Repository" = "https://github.com/vivganes/oh-my-ralph"
+[project.scripts]
+oh-my-ralph = "oh_my_ralph.ralph:main"
+
+[tool.setuptools.package-data]
+oh_my_ralph = ["*.md"]

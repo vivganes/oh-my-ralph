@@ -15,9 +15,9 @@ See @requirements.md for full specifications.
 ├── tests/         # Test files
 ├── docs/          # Documentation
 ├── requirements.md # Project specifications
-├── fix_plan.md    # Current plan and progress tracking
-├── prompt.md      # Ralph loop prompt
-└── AGENT.md       # This file - agent instructions
+├── .ralph/fix_plan.md    # Current plan and progress tracking
+├── .ralph/prompt.md      # Ralph loop prompt
+└── .ralph/AGENT.md       # This file - agent instructions
 ```
 
 ## Build Instructions
@@ -50,5 +50,5 @@ See @requirements.md for full specifications.
 
 - Always run tests after making changes
 - Search before implementing - code may already exist
-- Update fix_plan.md with findings
+- Update `.ralph/fix_plan.md` with findings
 - Commit when tests pass
