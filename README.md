@@ -8,13 +8,15 @@ Python 3.10+
 
 ## How to run?
 
-1. Clone this repo
+1. Install the package
+    ```
+    pip install oh-my-ralph
+    ```
 2. Place a `requirements.md` file with your detailed requirements in your working directory (where you want the software to be built)
 3. To run ralph using opencode, run the following command:
-
-```bash
-oh-my-ralph --agent "opencode run" --model opencode/glm-4.7-free --start-opencode-web-at-port 8089 --working-dir /path/to/dir/with/requirements
-```
+    ```bash
+    oh-my-ralph --agent "opencode run" --model opencode/glm-4.7-free --start-opencode-web-at-port 8089 --working-dir /path/to/dir/with/requirements
+    ```
 
 ## Development
 
@@ -26,7 +28,7 @@ Tests are automatically run during the build process. To run tests manually:
 .\run_tests.bat
 ```
 
-All 24 tests must pass before building.
+All tests must pass before building.
 
 ### Building the Package
 
