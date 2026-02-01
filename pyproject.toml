@@ -48,3 +48,10 @@ commit_args = ""
 setup_hooks = []
 pre_commit_hooks = []
 post_commit_hooks = []
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+[[tool.bumpversion.files]]
+filename = "oh_my_ralph/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
