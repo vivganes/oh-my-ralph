@@ -11,7 +11,10 @@ permissions:            # 2
 jobs:
   build:                # 3
     runs-on: ubuntu-latest
-    steps:
+    steps:      
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Install bump-my-version
         run: pip install bump-my-version
 
@@ -27,9 +30,6 @@ jobs:
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: hynek/build-and-inspect-python-package@v2
         with:
           attest-build-provenance-github: 'true'
