@@ -10,14 +10,16 @@ See @requirements.md for full specifications.
 
 ## Directory Structure
 
+Add to the following outline with your findings, if needed.
+
 ```
-├── src/           # Source code
-├── tests/         # Test files
-├── docs/          # Documentation
 ├── requirements.md # Project specifications
 ├── .ralph/fix_plan.md    # Current plan and progress tracking
 ├── .ralph/prompt.md      # Ralph loop prompt
-└── .ralph/AGENT.md       # This file - agent instructions
+├── .ralph/AGENT.md       # This file - agent instructions
+
++ other files.
+
 ```
 
 ## Build Instructions

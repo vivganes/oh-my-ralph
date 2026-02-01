@@ -9,7 +9,7 @@
 
 ## Your Task
 
-1. Your task is to implement missing functionality as defined in @requirements.md using parallel subagents where possible. Follow the `.ralph/fix_plan.md` and choose the MOST IMPORTANT item to work on. Before making changes, search the codebase thoroughly (don't assume something is not implemented - use ripgrep/search).  If nothing needs to be done, then output only `<PROMISE>DONE</PROMISE>` and exit.
+1. Your task is to implement missing functionality as defined in @requirements.md using parallel subagents where possible. Follow the `.ralph/fix_plan.md` and choose the MOST IMPORTANT item to work on. Before making changes, search the codebase thoroughly (don't assume something is not implemented - use ripgrep/search).  At this stage, if nothing needs to be done, then output only `<PROMISE>DONE</PROMISE>` and exit. Else, continue with next step.
 
 2. After implementing functionality or resolving problems, run the tests for that unit of code. If functionality is missing, add it as per the specifications. Think hard. If tests unrelated to your work fail, resolve them as part of this change.
 
