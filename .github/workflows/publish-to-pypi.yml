@@ -1,8 +1,7 @@
+
 name: Publish to PyPI
-on:                     # 1
-  push:
-    branches: [main]
-    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+on:
+  workflow_dispatch:
 
 permissions:            # 2
   attestations: write
