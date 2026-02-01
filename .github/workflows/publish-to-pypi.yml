@@ -15,8 +15,8 @@ jobs:
       - name: Install bump-my-version
         run: pip install bump-my-version
 
-      - name: Bump version (patch)
-        run: bump-my-version bump patch --config-file pyproject.toml oh_my_ralph/__init__.py
+      - name: Bump version (minor)
+        run: bump-my-version bump minor --config-file pyproject.toml
 
       - name: Commit version bump
         run: |
