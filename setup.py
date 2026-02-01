@@ -1,8 +1,9 @@
 from setuptools import setup, find_packages
+from oh_my_ralph import __version__
 
 setup(
     name="oh-my-ralph",
-    version="0.1.0",
+    version=__version__,
     description="An opinionated orchestrator for Ralph Wiggum loops",
     author="vivganes",
     license="MIT",

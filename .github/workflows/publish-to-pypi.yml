@@ -13,6 +13,21 @@ jobs:
   build:                # 3
     runs-on: ubuntu-latest
     steps:
+      - name: Install bump-my-version
+        run: pip install bump-my-version
+
+      - name: Bump version (patch)
+        run: bump-my-version bump patch --config-file pyproject.toml oh_my_ralph/__init__.py
+
+      - name: Commit version bump
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add pyproject.toml oh_my_ralph/__init__.py
+          git commit -m "Bump version [skip ci]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
