@@ -108,17 +108,101 @@ class TestRalphLoop(unittest.TestCase):
         self.assertIn("--attach http://localhost:8089", cmd)
         self.assertIn("Read and follow the instructions", cmd)
 
-    def test_build_agent_command_other_agent(self):
-        """Test building command for non-opencode agent."""
+    def test_build_agent_command_copilot(self):
+        """Test building command for copilot agent."""
         ralph = RalphLoop(
-            agent_command="some-other-agent",
+            agent_command="copilot -p",
+            model="gpt-4",
             working_dir=self.temp_dir,
             log_file=self.log_file,
         )
         
         cmd = ralph._build_agent_command("test prompt")
         
-        self.assertEqual(cmd, "some-other-agent")
+        self.assertIn("copilot -p", cmd)
+        self.assertIn("--model gpt-4", cmd)
+        self.assertIn("Read and follow the instructions", cmd)
+
+    def test_build_agent_command_claude(self):
+        """Test building command for claude agent."""
+        ralph = RalphLoop(
+            agent_command="claude -p",
+            model="sonnet",
+            working_dir=self.temp_dir,
+            log_file=self.log_file,
+        )
+        
+        cmd = ralph._build_agent_command("test prompt")
+        
+        self.assertIn("claude -p", cmd)
+        self.assertIn("--model sonnet", cmd)
+        self.assertIn("Read and follow the instructions", cmd)
+
+    def test_build_agent_command_copilot_no_model(self):
+        """Test building command for copilot agent without model."""
+        ralph = RalphLoop(
+            agent_command="copilot -p",
+            working_dir=self.temp_dir,
+            log_file=self.log_file,
+        )
+        
+        cmd = ralph._build_agent_command("test prompt")
+        
+        self.assertIn("copilot -p", cmd)
+        self.assertNotIn("--model", cmd)
+        self.assertIn("Read and follow the instructions", cmd)
+
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
+    def test_run_agent_copilot_no_stdin(self, mock_popen):
+        """Test that copilot agent runs without stdin piping."""
+        mock_process = Mock()
+        mock_process.communicate.return_value = ("stdout content", "")
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
+        
+        ralph = RalphLoop(
+            agent_command="copilot -p",
+            working_dir=self.temp_dir,
+            log_file=self.log_file,
+        )
+        
+        return_code, stdout, stderr = ralph._run_agent("test prompt")
+        
+        # Verify Popen was called with stdout/stderr but no stdin
+        mock_popen.assert_called_once()
+        call_args = mock_popen.call_args
+        self.assertIn("stdout", call_args[1])
+        self.assertIn("stderr", call_args[1])
+        self.assertNotIn("stdin", call_args[1])  # No stdin for copilot/claude
+        
+        self.assertEqual(return_code, 0)
+        self.assertEqual(stdout, "stdout content")
+
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
+    def test_run_agent_claude_no_stdin(self, mock_popen):
+        """Test that claude agent runs without stdin piping."""
+        mock_process = Mock()
+        mock_process.communicate.return_value = ("stdout content", "")
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
+        
+        ralph = RalphLoop(
+            agent_command="claude -p",
+            working_dir=self.temp_dir,
+            log_file=self.log_file,
+        )
+        
+        return_code, stdout, stderr = ralph._run_agent("test prompt")
+        
+        # Verify Popen was called with stdout/stderr but no stdin
+        mock_popen.assert_called_once()
+        call_args = mock_popen.call_args
+        self.assertIn("stdout", call_args[1])
+        self.assertIn("stderr", call_args[1])
+        self.assertNotIn("stdin", call_args[1])  # No stdin for copilot/claude
+        
+        self.assertEqual(return_code, 0)
+        self.assertEqual(stdout, "stdout content")
 
     @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
     def test_run_agent_success(self, mock_popen):

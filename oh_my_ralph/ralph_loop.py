@@ -88,11 +88,18 @@ class RalphLoop:
     def _build_agent_command(self, prompt: str) -> str:
         agent_cmd = self.agent_command
         uses_opencode = agent_cmd.strip().startswith("opencode run")
+        uses_copilot = "copilot" in agent_cmd
+        uses_claude = "claude" in agent_cmd
         if uses_opencode:
             if self.model:
                 agent_cmd += f" --model {self.model}"
             if self.opencode_port:
                 agent_cmd += f" --attach http://localhost:{self.opencode_port}"
+            agent_cmd += f' "Read and follow the instructions in the file `{self.prompt_file}`."'
+        elif uses_copilot or uses_claude:
+            if self.model:
+                agent_cmd += f" --model {self.model}"
+            # For copilot -p and claude -p, instruct to read the file
             agent_cmd += f' "Read and follow the instructions in the file `{self.prompt_file}`."'
         return agent_cmd
 
@@ -100,8 +107,9 @@ class RalphLoop:
         try:
             agent_cmd = self._build_agent_command(prompt)
             uses_opencode = self.agent_command.strip().startswith("opencode run")
+            uses_command_with_prompt_arg = uses_opencode or "copilot" in self.agent_command or "claude" in self.agent_command
             print(f"Running command: {agent_cmd}")
-            if uses_opencode:
+            if uses_command_with_prompt_arg:
                 process = subprocess.Popen(
                     agent_cmd,
                     shell=True,

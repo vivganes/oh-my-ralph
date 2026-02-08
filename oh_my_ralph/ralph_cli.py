@@ -11,9 +11,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  oh-my-ralph --agent "npx --yes @sourcegraph/amp"
+  oh-my-ralph --agent "claude -p"
+  oh-my-ralph --agent "copilot -p"
   oh-my-ralph --agent "opencode run"
+  oh-my-ralph --agent "npx --yes @sourcegraph/amp"  
   oh-my-ralph --agent "aider --yes-always" 
+  
   oh-my-ralph --max-iterations 10  # Run only 10 iterations
 
 The Ralph Wiggum technique works best when:
