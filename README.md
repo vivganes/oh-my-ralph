@@ -125,6 +125,9 @@ oh-my-ralph --agent "copilot -p" --model gpt-4 --working-dir /path/to/dir/with/r
 - Non-interactive execution per iteration
 - Seamless integration with GitHub ecosystem
 - Automatic permission skipping with `--yolo` flag for uninterrupted automation
+
+
+## What does this do?
 - Runs your specified `agent` command in a loop.
 - The loop exits when any of the following occur:
     - The command prints `<PROMPT>DONE</PROMPT>`.
