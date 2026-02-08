@@ -57,7 +57,7 @@ class RalphLoop:
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True,
+                encoding='utf-8',
             )
         except Exception as e:
             self._log(f"Failed to start opencode web server: {e}")
@@ -132,7 +132,7 @@ class RalphLoop:
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    text=True,
+                    encoding='utf-8',
                 )
                 stdout, stderr = process.communicate(timeout=3600)
             else:
@@ -142,7 +142,7 @@ class RalphLoop:
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    text=True,
+                    encoding='utf-8',
                 )
                 stdout, stderr = process.communicate(input=prompt, timeout=3600)
             return process.returncode, stdout, stderr
