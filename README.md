@@ -42,6 +42,13 @@
 
 This is a simple orchestrator for <a href="https://venturebeat.com/technology/how-ralph-wiggum-went-from-the-simpsons-to-the-biggest-name-in-ai-right-now" target="_blank">Ralph Wiggum</a> loop invented by <a href="https://ghuntley.com" target="_blank">Geoffrey Huntley</a>.
 
+## Supports 
+1. [Claude Code](#using-with-claude-code)
+2. [Github Copilot](#using-with-github-copilot-cli)
+3. [Opencode](#using-with-opencode)
+4. [Amp](#using-with-amp-sourcegraph)
+5. Any other tool that you can call from CLI (Experimental)
+
 ## Requirements
 Python 3.10+
 
@@ -65,10 +72,26 @@ Claude Code offers Anthropic's Claude models with advanced coding capabilities.
 oh-my-ralph --agent "claude -p" --model sonnet --working-dir /path/to/dir/with/requirements
 ```
 
+**Note:** The `--dangerously-skip-permissions` flag is automatically added to enable all permissions for seamless operation.
+
+## Using with AMP (Sourcegraph)
+
+AMP provides powerful AI assistance with multi-model support and advanced coding capabilities.
+
+**Prerequisites:**
+- Install AMP: `npm install -g @sourcegraph/amp@latest` or use `npx --yes @sourcegraph/amp`
+
+```bash
+oh-my-ralph --agent "npx --yes @sourcegraph/amp" --model smart --working-dir /path/to/dir/with/requirements
+```
+
+**Note:** The `--dangerously-allow-all` flag is automatically added to enable all permissions for seamless operation.
+
 **Features:**
-- Access to Claude Sonnet, Opus, and Haiku models
-- Fast, non-interactive execution
-- Excellent code understanding and generation
+- Multi-model support (Claude Opus 4.6, GPT-5.2, fast models)
+- Advanced coding capabilities with subagents and oracle mode
+- Seamless integration with development workflows
+- Automatic permission handling with `--dangerously-allow-all` flag for uninterrupted operation
 
 ## Using with OpenCode
 
@@ -82,6 +105,7 @@ oh-my-ralph --agent "opencode run" --model opencode/glm-4.7-free --start-opencod
 - Web dashboard at `http://localhost:8089`
 - Supports various OpenCode models
 - Real-time progress monitoring
+- Automated permission handling for seamless operation
 
 ## Using with GitHub Copilot CLI
 
@@ -94,14 +118,13 @@ GitHub Copilot CLI provides powerful AI assistance with access to GitHub's Copil
 oh-my-ralph --agent "copilot -p" --model gpt-4 --working-dir /path/to/dir/with/requirements
 ```
 
+**Note:** The `--yolo` flag is automatically added to enable all permissions for seamless operation.
+
 **Features:**
 - Access to GPT-4 and other Copilot models
 - Non-interactive execution per iteration
 - Seamless integration with GitHub ecosystem
-
-
-
-## What does this do?
+- Automatic permission skipping with `--yolo` flag for uninterrupted automation
 - Runs your specified `agent` command in a loop.
 - The loop exits when any of the following occur:
     - The command prints `<PROMPT>DONE</PROMPT>`.

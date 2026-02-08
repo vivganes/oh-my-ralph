@@ -90,16 +90,33 @@ class RalphLoop:
         uses_opencode = agent_cmd.strip().startswith("opencode run")
         uses_copilot = "copilot" in agent_cmd
         uses_claude = "claude" in agent_cmd
+        uses_amp = "@sourcegraph/amp" in agent_cmd or "amp" in agent_cmd and "--yes" in agent_cmd
         if uses_opencode:
             if self.model:
                 agent_cmd += f" --model {self.model}"
             if self.opencode_port:
                 agent_cmd += f" --attach http://localhost:{self.opencode_port}"
             agent_cmd += f' "Read and follow the instructions in the file `{self.prompt_file}`."'
-        elif uses_copilot or uses_claude:
-            if self.model:
-                agent_cmd += f" --model {self.model}"
-            # For copilot -p and claude -p, instruct to read the file
+        elif uses_copilot or uses_claude or uses_amp:
+            if uses_copilot:
+                # For copilot, restructure: copilot --model X --yolo -p "prompt"
+                base_cmd = agent_cmd.split()[0]  # "copilot"
+                flags_part = ""
+                if self.model:
+                    flags_part += f" --model {self.model}"
+                flags_part += " --yolo"
+                # Extract any additional flags from original command (like -p)
+                additional_flags = " ".join(agent_cmd.split()[1:])  # "-p"
+                agent_cmd = f"{base_cmd}{flags_part} {additional_flags}"
+            else:
+                # For claude and amp, keep the original logic
+                if self.model:
+                    agent_cmd += f" --model {self.model}"
+                if uses_claude:
+                    agent_cmd += " --dangerously-skip-permissions"
+                elif uses_amp:
+                    agent_cmd += " --dangerously-allow-all"
+            # For copilot -p, claude -p, and amp, instruct to read the file
             agent_cmd += f' "Read and follow the instructions in the file `{self.prompt_file}`."'
         return agent_cmd
 
@@ -107,7 +124,7 @@ class RalphLoop:
         try:
             agent_cmd = self._build_agent_command(prompt)
             uses_opencode = self.agent_command.strip().startswith("opencode run")
-            uses_command_with_prompt_arg = uses_opencode or "copilot" in self.agent_command or "claude" in self.agent_command
+            uses_command_with_prompt_arg = uses_opencode or "copilot" in self.agent_command or "claude" in self.agent_command or "@sourcegraph/amp" in self.agent_command or ("amp" in self.agent_command and "--yes" in self.agent_command)
             print(f"Running command: {agent_cmd}")
             if uses_command_with_prompt_arg:
                 process = subprocess.Popen(

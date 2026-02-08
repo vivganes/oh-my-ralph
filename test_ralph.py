@@ -119,8 +119,7 @@ class TestRalphLoop(unittest.TestCase):
         
         cmd = ralph._build_agent_command("test prompt")
         
-        self.assertIn("copilot -p", cmd)
-        self.assertIn("--model gpt-4", cmd)
+        self.assertIn("copilot --model gpt-4 --yolo -p", cmd)
         self.assertIn("Read and follow the instructions", cmd)
 
     def test_build_agent_command_claude(self):
@@ -136,6 +135,23 @@ class TestRalphLoop(unittest.TestCase):
         
         self.assertIn("claude -p", cmd)
         self.assertIn("--model sonnet", cmd)
+        self.assertIn("--dangerously-skip-permissions", cmd)
+        self.assertIn("Read and follow the instructions", cmd)
+
+    def test_build_agent_command_amp(self):
+        """Test building command for amp agent."""
+        ralph = RalphLoop(
+            agent_command="npx --yes @sourcegraph/amp",
+            model="smart",
+            working_dir=self.temp_dir,
+            log_file=self.log_file,
+        )
+        
+        cmd = ralph._build_agent_command("test prompt")
+        
+        self.assertIn("npx --yes @sourcegraph/amp", cmd)
+        self.assertIn("--model smart", cmd)
+        self.assertIn("--dangerously-allow-all", cmd)
         self.assertIn("Read and follow the instructions", cmd)
 
     def test_build_agent_command_copilot_no_model(self):
@@ -148,7 +164,7 @@ class TestRalphLoop(unittest.TestCase):
         
         cmd = ralph._build_agent_command("test prompt")
         
-        self.assertIn("copilot -p", cmd)
+        self.assertIn("copilot --yolo -p", cmd)
         self.assertNotIn("--model", cmd)
         self.assertIn("Read and follow the instructions", cmd)
 
@@ -200,6 +216,32 @@ class TestRalphLoop(unittest.TestCase):
         self.assertIn("stdout", call_args[1])
         self.assertIn("stderr", call_args[1])
         self.assertNotIn("stdin", call_args[1])  # No stdin for copilot/claude
+        
+        self.assertEqual(return_code, 0)
+        self.assertEqual(stdout, "stdout content")
+
+    @patch("oh_my_ralph.ralph_loop.subprocess.Popen")
+    def test_run_agent_amp_no_stdin(self, mock_popen):
+        """Test that amp agent runs without stdin piping."""
+        mock_process = Mock()
+        mock_process.communicate.return_value = ("stdout content", "")
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
+        
+        ralph = RalphLoop(
+            agent_command="npx --yes @sourcegraph/amp",
+            working_dir=self.temp_dir,
+            log_file=self.log_file,
+        )
+        
+        return_code, stdout, stderr = ralph._run_agent("test prompt")
+        
+        # Verify Popen was called with stdout/stderr but no stdin
+        mock_popen.assert_called_once()
+        call_args = mock_popen.call_args
+        self.assertIn("stdout", call_args[1])
+        self.assertIn("stderr", call_args[1])
+        self.assertNotIn("stdin", call_args[1])  # No stdin for amp
         
         self.assertEqual(return_code, 0)
         self.assertEqual(stdout, "stdout content")
