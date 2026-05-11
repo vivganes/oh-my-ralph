@@ -115,15 +115,14 @@ GitHub Copilot CLI provides powerful AI assistance with access to GitHub's Copil
 - Install GitHub Copilot CLI: <a href="https://docs.github.com/en/copilot/github-copilot-in-the-cli/quickstart" target="_blank">https://docs.github.com/en/copilot/github-copilot-in-the-cli/quickstart</a>
 
 ```bash
-oh-my-ralph --agent "copilot -p" --model gpt-4 --working-dir /path/to/dir/with/requirements
+oh-my-ralph --agent "copilot -p" --model GPT-4.1 --working-dir /path/to/dir/with/requirements
 ```
 
 **Note:** The `--yolo` flag is automatically added to enable all permissions for seamless operation.
 
 **Features:**
-- Access to GPT-4 and other Copilot models
 - Non-interactive execution per iteration
-- Seamless integration with GitHub ecosystem
+- Seamless integration with GitHub Copilot ecosystem
 - Automatic permission skipping with `--yolo` flag for uninterrupted automation
 
 
